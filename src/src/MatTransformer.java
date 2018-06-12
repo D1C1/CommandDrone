@@ -2,13 +2,12 @@ package src;
 
 import java.awt.FlowLayout;
 import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-
-import java.awt.image.BufferedImage;
 
 import org.opencv.core.Mat;
 
@@ -65,7 +64,7 @@ public class MatTransformer {
 		lbl.setIcon(icon);
 		frame.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
 		frame.add(lbl);
-		
+		System.out.println("frame width: " + frame.getWidth() + " frame height: " + frame.getHeight());
 	}
 	
 }

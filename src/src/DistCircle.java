@@ -14,7 +14,7 @@ public class DistCircle {
 			dist = DistCalc(122,dia,942.62);
 			break;
 		case 2:
-			dist = DistCalc(92.5,dia,562.162);
+			dist = DistCalc(92.5,dia,562.16);
 			break;
 		case 5: case 6:
 			dist = DistCalc(83.5,dia,1053.89);
