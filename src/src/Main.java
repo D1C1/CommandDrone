@@ -24,10 +24,6 @@ public class Main {
 	static final int upperX = imgX/2 + 15;
 	static final int upperY = imgX/2 + 15;
 
-
-
-
-
 	public static void main(String[] args) throws IOException {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		System.loadLibrary("opencv_ffmpeg341_64");
@@ -35,15 +31,13 @@ public class Main {
 
 		VideoCapture cam = new VideoCapture("tcp://192.168.1.1:5555");
 		Mat frame = new Mat();
-		MatTransformer MT = new MatTransformer();
+		VideoStreamController MT = new VideoStreamController();
 		String qr;
 		BufferedImage Bimg = null;
 		BufferedImage Bimgc = null;
-		//Vodka drone = new Vodka();
+		DroneController drone = new DroneController();
 		boolean swt = true;
 		Point center = new Point(0,0);
-		double angle = 0;
-		double posX = 0,posY = 0,posZ = 0;
 		List<Point> circleslist = new ArrayList<Point>();
 		/*
 		drone.setRotorPower(0.25);
@@ -56,9 +50,7 @@ public class Main {
 		}
 		 */
 
-		posX = 0;
-		posY = 0;
-		posZ = 0;
+		//Brug navdata i stedet
 
 		if (cam.isOpened()) {
 			cam.read(frame);
@@ -69,9 +61,9 @@ public class Main {
 			while(swt == true ) {
 				cam.read(frame);
 
-				qr = QRReader.ReadQR(Bimg);
+				//qr = QRReader.ReadQR(Bimg);
 
-				System.out.println(qr);
+				//System.out.println(qr);
 
 				Mat gray = new Mat();
 				Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
@@ -82,22 +74,19 @@ public class Main {
 						100.0, 60.0, 100, 500); // change the last two parameters
 				// (min_radius & max_radius) to detect larger circles
 
-				Mat tempCircles = circles.clone();
-
 				for (int x = 0; x < circles.cols(); x++) {
 					double[] c = circles.get(0, x);
 					center = new Point(Math.round(c[0]), Math.round(c[1]));
-					System.out.println("center x: " + center.x + " center y: " + center.y);
+					//System.out.println("center x: " + center.x + " center y: " + center.y);
 					circleslist.add(center);
 					// circle center
 					Imgproc.circle(frame, center, 1, new Scalar(0, 100, 100), 3, 8, 0);
 					// circle outline
 					int radius = (int) Math.round(c[2]);
-					System.out.println("radius = "+radius);
-					System.out.println(gray.rows());
-					System.out.println("col = " + gray.cols());
+					//System.out.println("radius = "+radius);
+					//System.out.println(gray.rows());
+					//System.out.println("col = " + gray.cols());
 					Imgproc.circle(frame, center, radius, new Scalar(255, 0, 255), 3, 8, 0);
-
 				}
 
 				if(circleslist.size() > 9) {
@@ -106,32 +95,35 @@ public class Main {
 					double tempY = circleslist.get(0).y;
 					boolean searchQR = false;
 					for (int i = 1; i < circleslist.size(); i++) {
-						if (!(tempX >= circleslist.get(i).x - 15 || tempX <= circleslist.get(i).x + 15) && (tempY >= circleslist.get(i).y - 15 || tempY <= circleslist.get(i).y + 15))
+						if (!(tempX >= circleslist.get(i).x - 15 || tempX <= circleslist.get(i).x + 15) && (tempY >= circleslist.get(i).y - 15 || tempY <= circleslist.get(i).y + 15)) {
 							searchQR = false;
+							break;
+						}
 						else
 							searchQR = true;
 					}
-					
+					System.out.println("searchQR: " + searchQR);
+					circleslist.clear();
 					if (searchQR == true) {
 						//Scan QR, fly through circle...
 					}
 				}
 
-				posX = center.x;
-				posY = center.y;
-				if(posX < lowerX) {
-					System.out.println("left");
-				}else if (posX > upperX) {
-					System.out.println("right");
+				drone.setX(center.x);
+				drone.setY(center.y);
+				if(drone.getX() < lowerX) {
+				//	System.out.println("left");
+				}else if (drone.getX() > upperX) {
+				//	System.out.println("right");
 				}
 
-				if(posY < lowerY) {
-					System.out.println("Down");
-				}else if (posY > upperY) {
-					System.out.println("up");
+				if(drone.getY() < lowerY) {
+				//	System.out.println("Down");
+				}else if (drone.getY() > upperY) {
+				//	System.out.println("up");
 				}
-				if (posY > lowerY && posY < upperY && posX > lowerX && posX < upperX) {
-					System.out.println("Spot on");
+				if (drone.getY() > lowerY && drone.getY() < upperY && drone.getX() > lowerX && drone.getX() < upperX) {
+				//	System.out.println("Spot on");
 				}
 
 

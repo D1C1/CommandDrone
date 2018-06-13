@@ -13,14 +13,14 @@ import org.opencv.core.Mat;
 
 //reference : https://stackoverflow.com/questions/26515981/display-image-using-mat-in-opencv-java
 
-public class MatTransformer {
+public class VideoStreamController {
 
 	private JFrame frame;
 	//private Image img;
 	private ImageIcon icon;
 	private JLabel lbl;
 	
-	public MatTransformer() {
+	public VideoStreamController() {
 		this.frame = new JFrame();
 		this.frame.setLayout(new FlowLayout());
 		this.frame.setSize(0,0);
@@ -64,7 +64,7 @@ public class MatTransformer {
 		lbl.setIcon(icon);
 		frame.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
 		frame.add(lbl);
-		System.out.println("frame width: " + frame.getWidth() + " frame height: " + frame.getHeight());
+		//System.out.println("frame width: " + frame.getWidth() + " frame height: " + frame.getHeight());
 	}
 	
 }
