@@ -1,5 +1,6 @@
 package src;
 
+import molotov.drone.DroneState;
 import molotov.drone.Vodka;
 
 public class DroneController {
@@ -8,7 +9,8 @@ public class DroneController {
 	double x, y, z;
 	
 	public DroneController() {
-		//drone = new Vodka();
+		drone = new Vodka();
+		drone.getNavFeed();
 		//Ini x, y and z variables.
 	}
 	
