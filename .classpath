@@ -11,5 +11,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/QR"/>
 	<classpathentry kind="lib" path="C:/Users/Morten/eclipse-workspace/qr/QRReader/core-3.3.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Morten/eclipse-workspace/qr/QRReader/javase-3.3.0.jar"/>
+	<classpathentry kind="lib" path="libs/yadrone_032.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
