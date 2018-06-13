@@ -6,6 +6,9 @@ Remember to add the library xuggle-xuggler, openCV 3.4.1, zxing core, zxing java
 QRReader is included in the github
 
 zxing javase
+
 zxing core
+
 xuggle-xuggler
+
 https://drive.google.com/drive/folders/1IATeNNhRlNEupfRyQmWFQOZNYXQ9kpmB?usp=sharing
