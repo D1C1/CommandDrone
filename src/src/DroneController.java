@@ -50,6 +50,8 @@ public class DroneController {
 			System.exit(0);
 		}
 	    
+
+	    
 		drone.getNavDataManager().addAttitudeListener(new AttitudeListener() {
 			
 		    public void attitudeUpdated(float pitch, float roll, float yaw)
