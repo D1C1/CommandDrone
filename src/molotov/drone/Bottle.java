@@ -284,4 +284,12 @@ public class Bottle {
 
 		return Float.floatToIntBits(f);
 	}
+	
+	//Denne metode har Niklas lavet d. 13. Juni 2018
+	public String getCoordinates() {
+		
+		return "NAV DATA FOUND --------------------- : " + new String(this.nav_data.getData());
+		
+	
+	}
 }
