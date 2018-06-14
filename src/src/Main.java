@@ -24,7 +24,7 @@ public class Main {
 	static final int upperX = imgX/2 + 15;
 	static final int upperY = imgX/2 + 15;
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		System.loadLibrary("opencv_ffmpeg341_64");
 		// TODO Auto-generated method stub
@@ -40,7 +40,13 @@ public class Main {
 		boolean isCentered = false;
 		Point center = new Point(0,0);
 		List<Point> circleslist = new ArrayList<Point>();
-
+		/*
+		System.out.println("takeoff nu");
+		drone.takeoff();
+		Thread.sleep(5000);
+		System.out.println("takeoff færdig ");
+*/
+		
 		//Brug navdata i stedet
 
 		if (cam.isOpened()) {
@@ -99,26 +105,6 @@ public class Main {
 						//Scan QR, fly through circle...
 					}
 				}
-/*
-				drone.setX(center.x);
-				drone.setY(center.y);
-				if(drone.getX() < lowerX) {
-				//	System.out.println("left");
-				}else if (drone.getX() > upperX) {
-				//	System.out.println("right");
-				}
-
-				if(drone.getY() < lowerY) {
-				//	System.out.println("Down");
-				}else if (drone.getY() > upperY) {
-				//	System.out.println("up");
-				}
-				if (drone.getY() > lowerY && drone.getY() < upperY && drone.getX() > lowerX && drone.getX() < upperX) {
-				//	System.out.println("Spot on");
-				}
-
-*/
-				// Centrere dronen i forhold til center (cirklen den finder på kameraet)
 
 
 				
@@ -131,30 +117,36 @@ public class Main {
 						System.out.println("QR kode fundet, der står" + qr);
 						// if qr er sand
 						//udregn distance
+						System.out.println("qr is : "+ qr);
 						drone.flyThroughRing();
+						Thread.sleep(2000);
 						drone.land();
+						Thread.sleep(2000);
+						System.exit(0);
 					}
 
 					//TODO set x += parameteren
 					//posX += 1;
 					//land
-					drone.land();
-					swt = false;
+					//drone.land();
+					Thread.sleep(2000);
+					//swt = false;
 				}else {
 					//søgnings algoritme
 					drone.search();
-					swt = false;
+					//swt = false;
 				}
 				
 				Bimg = MT.Mat2BufferedImage(frame);
-				MT.updateImage(Bimg);
-				//HighGui.imshow("detected circles", frame);
+				//MT.updateImage(Bimg);
 			}
 
 		}
 		else {
 			System.out.println("Error...");
 		}
+		drone.land();
+		Thread.sleep(2000);
 
 	}
 

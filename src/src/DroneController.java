@@ -17,18 +17,18 @@ import de.yadrone.base.command.LEDAnimation;
 import de.yadrone.base.exception.ARDroneException;
 import de.yadrone.base.exception.IExceptionListener;
 import de.yadrone.base.navdata.AttitudeListener;
+import de.yadrone.base.navdata.Altitude;
+import de.yadrone.base.navdata.AltitudeListener;
 import de.yadrone.base.navdata.VelocityListener;
-import molotov.drone.Alcohol;
-import molotov.drone.Bottle;
-import molotov.drone.DroneState;
-import molotov.drone.Vodka;
+
 
 public class DroneController {
 	
 	double x, y, z;
 	String data;
-	int speed = 10;
+	int speed = 30;
 	IARDrone drone = null;
+	int alt = 0;
 
 
 	
@@ -43,6 +43,24 @@ public class DroneController {
 			exc.printStackTrace();
 		}
 	    
+	    drone.getNavDataManager().addAltitudeListener(new AltitudeListener (){
+	    	
+	    	@Override
+	    	public void receivedAltitude(int altitude) {
+	    		System.out.println("alti is "+altitude);
+	    		alt = altitude;
+	    	}
+
+			@Override
+			public void receivedExtendedAltitude(Altitude arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+	    	
+	    }
+	 );
+	    
+	    /*
 	    drone.getNavDataManager().addVelocityListener(new VelocityListener() {
 
 			@Override
@@ -54,7 +72,7 @@ public class DroneController {
 	    		
 	    }
 	);
-
+*/
 
 	    /*
 		drone.getNavDataManager().addAttitudeListener(new AttitudeListener() {
@@ -98,18 +116,26 @@ public class DroneController {
 		*/
 		//Ini x, y and z variables.
 	}
+	
+	public void flightLogic() {
+		boolean swt = true;
+		while (swt = true) {
+			
+		}
+	}
 		
 	
 	public void takeoff() {
-	
-		//drone.getCommandManager().setLedsAnimation(LEDAnimation.BLINK_ORANGE, 3, 10);
-		drone.getCommandManager().takeOff().doFor(5000);
-		drone.getCommandManager().hover().doFor(2000);
-		drone.getCommandManager().up(speed).doFor(500);
-		//drone.getCommandManager().goLeft(speed).doFor(1000);
-		//drone.getCommandManager().hover().doFor(2000);
-		//drone.getCommandManager().landing();
-		drone.getNavDataManager();
+		drone.getCommandManager().takeOff().doFor(1500);
+		drone.getCommandManager().hover().doFor(5000);
+		while (alt < 1300) {
+			drone.getCommandManager().up(speed).doFor(250);
+		}
+		while (alt > 1400) {
+			drone.getCommandManager().down(speed).doFor(250);
+		}
+		drone.getCommandManager().hover().doFor(5000);
+		drone.getCommandManager().landing();
 		
 		System.out.println("Takeoff!");
 	}
@@ -117,7 +143,7 @@ public class DroneController {
 	public void search() {
 		
 		//TODO lav søgnings algoritme
-		drone.getCommandManager().landing();
+		//drone.getCommandManager().landing();
 		System.out.println("Søgnings algoritme");
 		
 	}
@@ -128,7 +154,8 @@ public class DroneController {
 	}
 	
 	public void flyThroughRing() {
-		drone.getCommandManager().forward(speed).doFor(2000).hover();
+		drone.getCommandManager().forward(speed).doFor(2000);
+		drone.getCommandManager().hover().doFor(2000);
 		//TODO lav flyvnings sekvens gennem ring
 		System.out.println("Flyver igennem ring");
 	}
