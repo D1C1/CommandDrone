@@ -12,3 +12,6 @@ zxing core
 xuggle-xuggler
 
 https://drive.google.com/drive/folders/1IATeNNhRlNEupfRyQmWFQOZNYXQ9kpmB?usp=sharing
+
+
+The molotov library is being discontinued and the library YADrone is being used instead, this library is in the lib folder
