@@ -49,7 +49,6 @@ public class DroneController {
 				drone.stop();
 			System.exit(0);
 		}
-	    
 
 	    
 		drone.getNavDataManager().addAttitudeListener(new AttitudeListener() {
@@ -69,7 +68,6 @@ public class DroneController {
 		        exc.printStackTrace();
 		    }
 		});
-		
 		
 		
 		//System.out.println(drone.getCoordinates());
