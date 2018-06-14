@@ -37,18 +37,9 @@ public class Main {
 		BufferedImage Bimgc = null;
 		DroneController drone = new DroneController();
 		boolean swt = true;
+		boolean isCentered = false;
 		Point center = new Point(0,0);
 		List<Point> circleslist = new ArrayList<Point>();
-		/*
-		drone.setRotorPower(0.25);
-
-		try {
-			drone.takeoff();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 */
 
 		//Brug navdata i stedet
 
@@ -108,7 +99,7 @@ public class Main {
 						//Scan QR, fly through circle...
 					}
 				}
-
+/*
 				drone.setX(center.x);
 				drone.setY(center.y);
 				if(drone.getX() < lowerX) {
@@ -126,62 +117,45 @@ public class Main {
 				//	System.out.println("Spot on");
 				}
 
-
+*/
 				// Centrere dronen i forhold til center (cirklen den finder på kameraet)
 
 
-				/*
+				
 				if (circles.cols()!=0) {
-					// scan qr
-					// if qr er sand
-					//udregn distance 
+					System.out.println("Ring fundet !!! centrere");
+					drone.center( lowerX,  upperX,  lowerY,  upperY);
+					System.out.println("ring center");
+					qr = QRReader.ReadQR(Bimg);
+					if (qr != null) {
+						System.out.println("QR kode fundet, der står" + qr);
+						// if qr er sand
+						//udregn distance
+						drone.flyThroughRing();
+						drone.land();
+					}
 
-					drone.forward(1);
 					//TODO set x += parameteren
-					posX += 1;
+					//posX += 1;
+					//land
 					drone.land();
 					swt = false;
 				}else {
 					//søgnings algoritme
-					drone.land();
+					drone.search();
 					swt = false;
-
-					System.out.println("turning");
-					angle=+5;
-					if(angle == 360) {
-						angle = 0;
-						drone.up(0.5);
-						//TODO samme med z som x
-						posZ += 0.5;
-					}
-
 				}
-				 */
+				
 				Bimg = MT.Mat2BufferedImage(frame);
 				MT.updateImage(Bimg);
 				//HighGui.imshow("detected circles", frame);
 			}
 
-
 		}
 		else {
 			System.out.println("Error...");
 		}
 
-		/*
-		VideoCapture cam = new VideoCapture();
-		cam.open("tcp://192.168.1.1:5555");
-
-		if (cam.isOpened()) {
-
-			System.out.println(cam.grab());
-
-		}
-		else {
-			System.out.println("Error...");
-		}
-		 */
-		//drone.land();
 	}
 
 }

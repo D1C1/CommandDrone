@@ -17,7 +17,7 @@ import de.yadrone.base.command.LEDAnimation;
 import de.yadrone.base.exception.ARDroneException;
 import de.yadrone.base.exception.IExceptionListener;
 import de.yadrone.base.navdata.AttitudeListener;
-
+import de.yadrone.base.navdata.VelocityListener;
 import molotov.drone.Alcohol;
 import molotov.drone.Bottle;
 import molotov.drone.DroneState;
@@ -27,13 +27,12 @@ public class DroneController {
 	
 	double x, y, z;
 	String data;
-	int speed = 30;
+	int speed = 10;
 	IARDrone drone = null;
 
 
 	
 	public DroneController() {
-		//drone = new Vodka();
 	    try
 	    {
 	        drone = new ARDrone();
@@ -43,14 +42,21 @@ public class DroneController {
 		{
 			exc.printStackTrace();
 		}
-		finally
-		{
-			if (drone != null)
-				drone.stop();
-			System.exit(0);
-		}
-
 	    
+	    drone.getNavDataManager().addVelocityListener(new VelocityListener() {
+
+			@Override
+			public void velocityChanged(float arg0, float arg1, float arg2) {
+				System.out.println("x = " + arg0 +", y= " + arg1 +", z= "+ arg2);
+				
+			}
+	    	
+	    		
+	    }
+	);
+
+
+	    /*
 		drone.getNavDataManager().addAttitudeListener(new AttitudeListener() {
 			
 		    public void attitudeUpdated(float pitch, float roll, float yaw)
@@ -68,6 +74,7 @@ public class DroneController {
 		        exc.printStackTrace();
 		    }
 		});
+		*/
 		
 		
 		//System.out.println(drone.getCoordinates());
@@ -94,25 +101,63 @@ public class DroneController {
 		
 	
 	public void takeoff() {
-		//drone.takeoff();
-		drone.getCommandManager().setLedsAnimation(LEDAnimation.BLINK_ORANGE, 3, 10);
-		//drone.getCommandManager().takeOff();
-		//drone.getCommandManager().waitFor(5000);
+	
+		//drone.getCommandManager().setLedsAnimation(LEDAnimation.BLINK_ORANGE, 3, 10);
+		drone.getCommandManager().takeOff().doFor(5000);
+		drone.getCommandManager().hover().doFor(2000);
+		drone.getCommandManager().up(speed).doFor(500);
+		//drone.getCommandManager().goLeft(speed).doFor(1000);
+		//drone.getCommandManager().hover().doFor(2000);
 		//drone.getCommandManager().landing();
+		drone.getNavDataManager();
+		
 		System.out.println("Takeoff!");
 	}
 	
 	public void search() {
 		
 		//TODO lav søgnings algoritme
+		drone.getCommandManager().landing();
 		System.out.println("Søgnings algoritme");
+		
+	}
+	public void test() {
+		drone.getCommandManager().forward(speed).doFor(2000);
+		drone.getCommandManager().landing();
 		
 	}
 	
 	public void flyThroughRing() {
-		
+		drone.getCommandManager().forward(speed).doFor(2000).hover();
 		//TODO lav flyvnings sekvens gennem ring
 		System.out.println("Flyver igennem ring");
+	}
+	
+	public void land() {
+		System.out.println("lander");
+		drone.getCommandManager().landing();
+	}
+	
+	public void center(int lowerX, int upperX, int lowerY, int upperY) {
+		
+		if(x < lowerX) {
+		//	System.out.println("left");
+		}else if (x > upperX) {
+		//	System.out.println("right");
+		}
+
+		if(y < lowerY) {
+		//	System.out.println("Down");
+		}else if (y > upperY) {
+		//	System.out.println("up");
+		}
+		if (y > lowerY && y < upperY && x > lowerX && x < upperX) {
+		//	System.out.println("Spot on");
+		}
+
+		
+		System.out.println("centrer drone");
+		
 	}
 	
 
