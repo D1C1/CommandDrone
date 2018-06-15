@@ -178,6 +178,7 @@ public class DroneController {
 		if(y < lowerY) {
 		//	System.out.println("Down");
 		}else if (y > upperY) {
+			// maybe compare to altitude
 		//	System.out.println("up");
 		}
 		if (y > lowerY && y < upperY && x > lowerX && x < upperX) {
