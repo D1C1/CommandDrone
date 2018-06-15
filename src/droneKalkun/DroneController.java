@@ -1,38 +1,74 @@
 package droneKalkun;
 
+import org.opencv.core.Point;
+
 import de.yadrone.base.ARDrone;
 import de.yadrone.base.IARDrone;
+import de.yadrone.base.configuration.ConfigurationListener;
 import de.yadrone.base.navdata.Altitude;
 import de.yadrone.base.navdata.AltitudeListener;
+import de.yadrone.base.navdata.ControlState;
+import de.yadrone.base.navdata.DroneState;
+import de.yadrone.base.navdata.GyroListener;
+import de.yadrone.base.navdata.GyroPhysData;
+import de.yadrone.base.navdata.GyroRawData;
+import de.yadrone.base.navdata.StateListener;
+import de.yadrone.base.navdata.TrackerData;
+import de.yadrone.base.navdata.VelocityListener;
+import de.yadrone.base.navdata.VisionData;
+import de.yadrone.base.navdata.VisionListener;
+import de.yadrone.base.navdata.VisionPerformance;
+import de.yadrone.base.navdata.VisionTag;
 
 public class DroneController {
 
 	double x, y, z;
 	String data;
-	int speed = 30;
+	int speed = 5;
 	IARDrone drone = null;
-	int alt = 0;
+	int alt = 0, cases = 0;
+	long timeNow, timeNow2; //Gør at dronen ikke spammer altitude ud, men kun 1 gang hvert sekund.
 
 	public DroneController() {
+		timeNow = System.currentTimeMillis();
+		timeNow2 = System.currentTimeMillis();
 		try {
 			drone = new ARDrone();
 			drone.start();
 		} catch (Exception exc) {
 			exc.printStackTrace();
 		}
+		
+		drone.getNavDataManager().addVelocityListener(new VelocityListener() {
 
+			@Override
+			public void velocityChanged(float arg0, float arg1, float arg2) {
+				// TODO Auto-generated method stub
+				System.out.println("arg0: " + arg0 + " arg1: " + arg1 + " arg2: " + arg2);
+			}
+			
+		});
+		
 		drone.getNavDataManager().addAltitudeListener(new AltitudeListener() {
 
 			@Override
 			public void receivedAltitude(int altitude) {
-				System.out.println("alti is " + altitude);
-				alt = altitude;
+
+				if (System.currentTimeMillis() - timeNow > 2000) {
+					System.out.println("alti is " + altitude);
+					timeNow = System.currentTimeMillis();
+				}
+				else if (altitude < 0)
+					System.out.println("alti is " + altitude);
+				alt = Math.abs(altitude);
+				if (alt > 1700) 
+					drone.getCommandManager().landing();
 			}
 
 			@Override
 			public void receivedExtendedAltitude(Altitude arg0) {
 				// TODO Auto-generated method stub
-
+				//System.out.println("receivedExtendedAltitude - ObsX: " + arg0.getObsX());
 			}
 
 		});
@@ -45,26 +81,58 @@ public class DroneController {
 		}
 	}
 
+
+
 	public void takeoff() {
-		drone.getCommandManager().takeOff().doFor(1500);
+		drone.getCommandManager().takeOff().doFor(2500);
 		drone.getCommandManager().hover().doFor(5000);
+		drone.getCommandManager().goLeft(5).doFor(100);
 		while (alt < 1280) {
-			drone.getCommandManager().up(speed).doFor(250);
+			drone.getCommandManager().up(speed*2).doFor(250); //HUSK SPEED GANGE 2
 		}
 		while (alt > 1420) {
 			drone.getCommandManager().down(speed).doFor(250);
 		}
-		drone.getCommandManager().hover().doFor(5000);
-		drone.getCommandManager().landing();
+		drone.getCommandManager().hover().doFor(2000);
+		//1drone.getCommandManager().landing();
 
 		System.out.println("Takeoff!");
 	}
 
 	public void search() {
 
-		// TODO lav søgnings algoritme
-		// drone.getCommandManager().landing();
-		System.out.println("Søgnings algoritme");
+		//if (System.currentTimeMillis() - timeNow2 > 500) {
+		//System.out.println("Søgnings algoritme");
+		switch(cases) {
+		case 0:
+			drone.getCommandManager().spinLeft(speed*3).doFor(250);
+			cases++;
+			//timeNow2 = System.currentTimeMillis();
+			break;
+		case 1:
+			drone.getCommandManager().spinRight(speed*3).doFor(500);
+			cases++;
+			//timeNow2 = System.currentTimeMillis();
+			break;
+		case 2:
+			drone.getCommandManager().spinLeft(speed*3).doFor(250);
+			cases++;
+			//timeNow2 = System.currentTimeMillis();
+			break;
+		case 3:
+			/*if (this.alt > 1700) 
+					drone.getCommandManager().landing();
+				else*/
+			drone.getCommandManager().up(speed).doFor(200);
+			cases = 0;
+			//timeNow2 = System.currentTimeMillis();
+			break;
+		default:
+			cases = 0;
+			//timeNow2 = System.currentTimeMillis();
+			break;
+		}
+		//	}
 
 	}
 
@@ -74,11 +142,17 @@ public class DroneController {
 
 	}
 
+	public void standStill() {
+		drone.getCommandManager().hover().doFor(2000);
+	}
+
 	public void flyThroughRing() {
 		// calculate distance
 		// fly the distance
-		drone.getCommandManager().forward(speed).doFor(2000);
-		drone.getCommandManager().hover().doFor(2000);
+		drone.getCommandManager().forward(speed*4);
+		//drone.getCommandManager().forward(speed*6).doFor(5000);
+		//drone.getCommandManager().forward(speed*6).doFor(5000);
+		//drone.getCommandManager().hover().doFor(2000);
 		// TODO lav flyvnings sekvens gennem ring
 		System.out.println("Flyver igennem ring");
 	}
@@ -88,25 +162,36 @@ public class DroneController {
 		drone.getCommandManager().landing();
 	}
 
-	public void center(int lowerX, int upperX, int lowerY, int upperY) {
+	public boolean center(int lowerX, int upperX, int lowerY, int upperY, Point center) {
 
-		if (x < lowerX) {
-			// System.out.println("left");
-		} else if (x > upperX) {
-			// System.out.println("right");
+		System.out.println("Prøver at centrere dronen");
+
+		if (center.x < lowerX) {
+			System.out.println("left");
+			drone.getCommandManager().goLeft(speed).doFor(150);
+		} else if (center.x > upperX) {
+			System.out.println("right");
+			drone.getCommandManager().goRight(speed).doFor(150);
 		}
 
-		if (y < lowerY) {
-			// System.out.println("Down");
-		} else if (y > upperY) {
+		if (center.y < lowerY) {
+			System.out.println("Down");
+			//drone.getCommandManager().hover().doFor(200);
+			drone.getCommandManager().down(speed).doFor(150);
+		} else if (center.y > upperY) {
 			// maybe compare to altitude
-			// System.out.println("up");
+			System.out.println("up");
+			//drone.getCommandManager().hover().doFor(200);
+			drone.getCommandManager().up(speed).doFor(150);
 		}
-		if (y > lowerY && y < upperY && x > lowerX && x < upperX) {
-			// System.out.println("Spot on");
+		if (center.y > lowerY && center.y < upperY && center.x > lowerX && center.x < upperX) {
+			System.out.println("Spot on");
+			//this.flyThroughRing();
+			return true;
 		}
+		return false;
 
-		System.out.println("centrer drone");
+		//System.out.println("centrer drone");
 
 	}
 
