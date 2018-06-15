@@ -1,4 +1,4 @@
-package src;
+package droneKalkun;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -154,6 +154,8 @@ public class DroneController {
 	}
 	
 	public void flyThroughRing() {
+		//calculate distance 
+		// fly the distance
 		drone.getCommandManager().forward(speed).doFor(2000);
 		drone.getCommandManager().hover().doFor(2000);
 		//TODO lav flyvnings sekvens gennem ring

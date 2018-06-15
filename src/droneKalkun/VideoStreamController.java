@@ -1,4 +1,4 @@
-package src;
+package droneKalkun;
 
 import java.awt.FlowLayout;
 import java.awt.Image;
