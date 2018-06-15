@@ -128,10 +128,10 @@ public class DroneController {
 	public void takeoff() {
 		drone.getCommandManager().takeOff().doFor(1500);
 		drone.getCommandManager().hover().doFor(5000);
-		while (alt < 1300) {
+		while (alt < 1280) {
 			drone.getCommandManager().up(speed).doFor(250);
 		}
-		while (alt > 1400) {
+		while (alt > 1420) {
 			drone.getCommandManager().down(speed).doFor(250);
 		}
 		drone.getCommandManager().hover().doFor(5000);
