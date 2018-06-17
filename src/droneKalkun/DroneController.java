@@ -1,24 +1,13 @@
 package droneKalkun;
 
+import java.util.concurrent.BlockingQueue;
+
 import org.opencv.core.Point;
 
 import de.yadrone.base.ARDrone;
 import de.yadrone.base.IARDrone;
-import de.yadrone.base.configuration.ConfigurationListener;
 import de.yadrone.base.navdata.Altitude;
 import de.yadrone.base.navdata.AltitudeListener;
-import de.yadrone.base.navdata.ControlState;
-import de.yadrone.base.navdata.DroneState;
-import de.yadrone.base.navdata.GyroListener;
-import de.yadrone.base.navdata.GyroPhysData;
-import de.yadrone.base.navdata.GyroRawData;
-import de.yadrone.base.navdata.StateListener;
-import de.yadrone.base.navdata.TrackerData;
-import de.yadrone.base.navdata.VelocityListener;
-import de.yadrone.base.navdata.VisionData;
-import de.yadrone.base.navdata.VisionListener;
-import de.yadrone.base.navdata.VisionPerformance;
-import de.yadrone.base.navdata.VisionTag;
 
 public class DroneController {
 
@@ -28,196 +17,188 @@ public class DroneController {
 	IARDrone drone = null;
 	int alt = 0, cases = 0;
 	long timeNow, timeNow2; //Gør at dronen ikke spammer altitude ud, men kun 1 gang hvert sekund.
+	private boolean ready;
+	private int direction = 0;
+	private BlockingQueue queueDrone;
+	private BlockingQueue queueBooleans;
+	private BlockingQueue queuePoint;
 
-	public DroneController() {
+	public void isReady() {
+		try {
+			queueDrone.put(true);
+		} catch (InterruptedException e) {
+			System.err.println("Fejl i Drone - Dronen kan ikke blive klar");
+			e.printStackTrace();
+		}
+	}
+
+	public DroneController(BlockingQueue queueDrone, BlockingQueue queueBooleans, BlockingQueue queuePoint) {
 		timeNow = System.currentTimeMillis();
 		timeNow2 = System.currentTimeMillis();
 		try {
 			drone = new ARDrone();
 			drone.start();
+			//drone.getCommandManager().setVideoBitrate(4000); 
+			this.queueDrone = queueDrone;
+			this.queueBooleans = queueBooleans;
+			this.queuePoint = queuePoint;
 		} catch (Exception exc) {
 			exc.printStackTrace();
 		}
-		
-		drone.getNavDataManager().addVelocityListener(new VelocityListener() {
 
-			@Override
-			public void velocityChanged(float arg0, float arg1, float arg2) {
-				// TODO Auto-generated method stub
-				System.out.println("arg0: " + arg0 + " arg1: " + arg1 + " arg2: " + arg2);
-			}
-			
-		});
-		
 		drone.getNavDataManager().addAltitudeListener(new AltitudeListener() {
-
 			@Override
 			public void receivedAltitude(int altitude) {
-
-				if (System.currentTimeMillis() - timeNow > 2000) {
+				alt = altitude;
+				if (System.currentTimeMillis() - timeNow > 1000) {
 					System.out.println("alti is " + altitude);
 					timeNow = System.currentTimeMillis();
 				}
 				else if (altitude < 0)
-					System.out.println("alti is " + altitude);
-				alt = Math.abs(altitude);
-				if (alt > 1700) 
+					System.out.println("alti is negative: " + altitude);
+				if (alt > 1600) 
 					drone.getCommandManager().landing();
 			}
-
 			@Override
-			public void receivedExtendedAltitude(Altitude arg0) {
-				// TODO Auto-generated method stub
-				//System.out.println("receivedExtendedAltitude - ObsX: " + arg0.getObsX());
-			}
-
+			public void receivedExtendedAltitude(Altitude arg0) {/*Empty*/}
 		});
+		isReady();
 	}
-
-	public void flightLogic() {
-		boolean swt = true;
-		while (swt = true) {
-
-		}
-	}
-
-
 
 	public void takeoff() {
-		drone.getCommandManager().takeOff().doFor(2500);
-		drone.getCommandManager().hover().doFor(5000);
-		drone.getCommandManager().goLeft(5).doFor(100);
-		while (alt < 1280) {
+		long idle = System.currentTimeMillis();
+		System.err.println("takeoff");
+	//	while (System.currentTimeMillis() - idle < 2500) {
+			drone.getCommandManager().takeOff().doFor(2500);
+		//}
+		idle = System.currentTimeMillis();
+		System.err.println("hover");
+		//while (System.currentTimeMillis() - idle < 1000) {
+			drone.getCommandManager().hover().doFor(500);
+		//}		
+
+		while (alt < 1180) { //1280 tidligere
 			drone.getCommandManager().up(speed*2).doFor(250); //HUSK SPEED GANGE 2
 		}
 		while (alt > 1420) {
 			drone.getCommandManager().down(speed).doFor(250);
 		}
-		drone.getCommandManager().hover().doFor(2000);
-		//1drone.getCommandManager().landing();
+		drone.getCommandManager().hover();
+		isReady();
+	}
 
-		System.out.println("Takeoff!");
+	public void searchForQR() throws InterruptedException {
+		drone.getCommandManager().down(speed*2).doFor(2000)
+		.forward(speed).doFor(1000)
+		.hover();
+		queueBooleans.put(true);
+		isReady();
+	}
+
+	public void correctQR() {
+		drone.getCommandManager().backward(speed).doFor(1000)
+		.up(speed*2).doFor(2000)
+		.hover();
+		isReady();
 	}
 
 	public void search() {
-
-		//if (System.currentTimeMillis() - timeNow2 > 500) {
-		//System.out.println("Søgnings algoritme");
-		switch(cases) {
+		long idle = System.currentTimeMillis();
+		switch(direction) {
 		case 0:
-			drone.getCommandManager().spinLeft(speed*3).doFor(250);
-			cases++;
-			//timeNow2 = System.currentTimeMillis();
+			System.err.println("Forward.....................................");
+			while (System.currentTimeMillis() - idle < 1500) {
+				drone.getCommandManager().forward(speed*2).doFor(500);
+			}
+			direction = 1;
 			break;
 		case 1:
-			drone.getCommandManager().spinRight(speed*3).doFor(500);
-			cases++;
-			//timeNow2 = System.currentTimeMillis();
-			break;
-		case 2:
-			drone.getCommandManager().spinLeft(speed*3).doFor(250);
-			cases++;
-			//timeNow2 = System.currentTimeMillis();
-			break;
-		case 3:
-			/*if (this.alt > 1700) 
-					drone.getCommandManager().landing();
-				else*/
-			drone.getCommandManager().up(speed).doFor(200);
-			cases = 0;
-			//timeNow2 = System.currentTimeMillis();
+			System.err.println("Spinning right..............................");
+			while (System.currentTimeMillis() - idle < 1500) {
+				drone.getCommandManager().spinRight(speed*3).doFor(500);
+			}
+			direction = 0;
 			break;
 		default:
-			cases = 0;
-			//timeNow2 = System.currentTimeMillis();
+			System.err.println("Fuck im fucked");
 			break;
 		}
-		//	}
-
-	}
-
-	public void test() {
-		drone.getCommandManager().forward(speed).doFor(2000);
-		drone.getCommandManager().landing();
-
+		//drone.getCommandManager().hover();
+		isReady();
 	}
 
 	public void standStill() {
-		drone.getCommandManager().hover().doFor(2000);
+		drone.getCommandManager().hover();
+		isReady();
 	}
 
 	public void flyThroughRing() {
-		// calculate distance
-		// fly the distance
 		drone.getCommandManager().forward(speed*4);
-		//drone.getCommandManager().forward(speed*6).doFor(5000);
-		//drone.getCommandManager().forward(speed*6).doFor(5000);
-		//drone.getCommandManager().hover().doFor(2000);
-		// TODO lav flyvnings sekvens gennem ring
-		System.out.println("Flyver igennem ring");
+		drone.getCommandManager().hover();
+		isReady();
 	}
 
 	public void land() {
-		System.out.println("lander");
 		drone.getCommandManager().landing();
 	}
 
-	public boolean center(int lowerX, int upperX, int lowerY, int upperY, Point center) {
+	public boolean center(int lowerX, int upperX, int lowerY, int upperY) throws InterruptedException {
 
-		System.out.println("Prøver at centrere dronen");
+		Point cp = null;
+		if(!queuePoint.isEmpty())
+			cp = (Point) queuePoint.take();
 
-		if (center.x < lowerX) {
-			System.out.println("left");
-			drone.getCommandManager().goLeft(speed).doFor(150);
-		} else if (center.x > upperX) {
-			System.out.println("right");
-			drone.getCommandManager().goRight(speed).doFor(150);
+		if (cp != null) {
+			System.err.println("Prøver at centrere dronen");
+			while (cp.x < lowerX) {
+				System.err.println("Left");
+				drone.getCommandManager().goLeft(speed/2).doFor(50);
+				if(!queuePoint.isEmpty())
+					cp = (Point) queuePoint.take();
+			} 
+			while (cp.x > upperX) {
+				System.err.println("Right");
+				drone.getCommandManager().goRight(speed/2).doFor(50);
+				if(!queuePoint.isEmpty())
+					cp = (Point) queuePoint.take();
+			}
+			while(cp.y < lowerY) {
+				System.err.println("Down");
+				drone.getCommandManager().down(speed/2).doFor(50);
+				if(!queuePoint.isEmpty())
+					cp = (Point) queuePoint.take();
+			}
+			while(cp.y > upperY) {
+				System.err.println("Up");
+				drone.getCommandManager().up(speed/2).doFor(50);
+				if(!queuePoint.isEmpty())
+					cp = (Point) queuePoint.take();
+			}
+			if (cp.y > lowerY && cp.y < upperY && cp.x > lowerX && cp.x < upperX) {
+				System.out.println("Spot on");
+				isReady();
+				drone.getCommandManager().hover();
+				return true;
+			}
 		}
-
-		if (center.y < lowerY) {
-			System.out.println("Down");
-			//drone.getCommandManager().hover().doFor(200);
-			drone.getCommandManager().down(speed).doFor(150);
-		} else if (center.y > upperY) {
-			// maybe compare to altitude
-			System.out.println("up");
-			//drone.getCommandManager().hover().doFor(200);
-			drone.getCommandManager().up(speed).doFor(150);
-		}
-		if (center.y > lowerY && center.y < upperY && center.x > lowerX && center.x < upperX) {
-			System.out.println("Spot on");
-			//this.flyThroughRing();
-			return true;
-		}
+		isReady();
+		drone.getCommandManager().hover();
 		return false;
-
-		//System.out.println("centrer drone");
-
 	}
 
-	// Getters and setters
-
-	public double getX() {
-		return x;
+	public boolean getReady() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	public void setReady(boolean b) {
+		ready = b;
+		// TODO Auto-generated method stub
 	}
 
-	public double getY() {
-		return y;
-	}
-
-	public double getZ() {
-		return z;
-	}
-
-	public void setX(double x) {
-		this.x = x;
-	}
-
-	public void setY(double y) {
-		this.y = y;
-	}
-
-	public void setZ(double z) {
-		this.z = z;
+	private void wait(int millis) {
+		long idle = System.currentTimeMillis();
+		while (System.currentTimeMillis() - idle < millis) {
+			//Wait ffs
+		}
 	}
 }

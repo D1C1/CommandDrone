@@ -25,6 +25,7 @@ public class OCVController implements Runnable {
 	Point center;
 	List<Point> circleslist;
 	String qr;
+	private boolean b;
 
 	public OCVController(BlockingQueue queueFrame, BlockingQueue queueBooleans, BlockingQueue queueQR, BlockingQueue queuePoint) {
 		cam = new VideoCapture("tcp://192.168.1.1:5555");
@@ -61,9 +62,9 @@ public class OCVController implements Runnable {
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
+		b = false;
 		while (running) {
 			cam.read(frame); //640 x 360
-
 
 			Mat gray = new Mat();
 			Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
@@ -86,7 +87,6 @@ public class OCVController implements Runnable {
 			}
 
 			if(circleslist.size() > 9) {
-				//System.out.println("arraylist size: " + circleslist.size());
 				double tempX = circleslist.get(0).x;
 				double tempY = circleslist.get(0).y;
 				for (int i = 1; i < circleslist.size(); i++) {
@@ -98,30 +98,38 @@ public class OCVController implements Runnable {
 						searchForCenter = true;
 				}
 				circleslist.clear();
-				if (circles.cols()!=0 && searchForCenter) { //Cirklen er god nok
-
+				if (queuePoint.isEmpty()) { //Nullpointer
 					try {
-						qr = QRReader.ReadQR(this.Mat2Bimg(frame));
-						if (qr != null && !qr.isEmpty())
-							queueQR.put(qr);
-					} catch (IOException | InterruptedException e1) {
-						// TODO Auto-generated catch block
-						System.err.println("Fejl ved læsning af QR kode...");
-						e1.printStackTrace();
-					}
-
-					if (queueBooleans.isEmpty() && queuePoint.isEmpty()) { //Nullpointer
-						try {
-							queueBooleans.put(true);
-							queuePoint.put(center);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+						queuePoint.put(center);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 					}
 				}
-			}
+				if (searchForCenter) { //Cirklen er god nok
+					if(!queueBooleans.isEmpty())
+						try {
+							b = (boolean) queueBooleans.take();
+						} catch (InterruptedException e2) {
+							// TODO Auto-generated catch block
+							e2.printStackTrace();
+						}
+					if(b) {
+						try {
+							qr = QRReader.ReadQR(this.Mat2Bimg(frame));
+							if (qr != null && queueQR.isEmpty()) {
+								queueQR.put(qr);
+								b = false;
+							}
+						} catch (IOException | InterruptedException e1) {
+							// TODO Auto-generated catch block
+							System.err.println("Fejl ved læsning af QR kode...");
+							e1.printStackTrace();
+						}
+						searchForCenter = false;
+					}
+				}
 
+			}
 			try {
 				queueFrame.put(frame);
 			} catch (InterruptedException e) {
@@ -130,14 +138,4 @@ public class OCVController implements Runnable {
 			}
 		}
 	}
-
-	//	public boolean getSearchForQR() {
-	//		return searchForQR;
-	//	}
-	//	
-	//	public boolean getBeginSearch() {
-	//		return beginSearch;
-	//	}
-
-
 }
