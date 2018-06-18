@@ -16,23 +16,33 @@ import org.opencv.core.Mat;
 
 public class VideoStreamController implements Runnable {
 
-	private JFrame frame;
+	private JFrame frame1, frame2;
 	//private Image img;
 	Mat m;
 	private ImageIcon icon;
 	private JLabel lbl;
 	BlockingQueue queue;
 	boolean running;
+	private BlockingQueue queueEdge;
 
-	public VideoStreamController(BlockingQueue queue) {
-		this.frame = new JFrame();
-		this.frame.setLayout(new FlowLayout());
-		this.frame.setSize(0,0);
-		this.frame.setVisible(true);
-		this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	public VideoStreamController(BlockingQueue queue, BlockingQueue queueEdge) {
+		this.frame1 = new JFrame();
+		this.frame1.setLayout(new FlowLayout());
+		this.frame1.setSize(0,0);
+		this.frame1.setVisible(true);
+		this.frame1.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		
+		this.frame2 = new JFrame();
+		this.frame2.setLayout(new FlowLayout());
+		this.frame2.setSize(0,0);
+		this.frame2.setVisible(true);
+		this.frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
 		lbl = new JLabel();
 		icon = new ImageIcon();
 		this.queue = queue;
+		this.queueEdge = queueEdge;
 		running = true;
 	}
 
@@ -59,42 +69,61 @@ public class VideoStreamController implements Runnable {
 
 	}
 
-	public void displayImage(Image img) {
+	public void displayImage(Image img, String frame) {
 
 		icon = new ImageIcon(img);
 
-		if(this.frame.getSize().getWidth() == 0 && this.frame.getSize().getHeight() == 0) {
-			frame.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
+		if (frame.equals("frame1")) {
+			if(this.frame1.getSize().getWidth() == 0 && this.frame1.getSize().getHeight() == 0) {
+				frame1.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
+			}
+			lbl.setIcon(icon);
+			frame1.add(lbl);
 		}
-		lbl.setIcon(icon);
-		frame.add(lbl);
+		else if (frame.equals("frame2")) {
+			if (this.frame2.getSize().getWidth() == 0 && this.frame2.getSize().getHeight() == 0) {
+				frame2.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
+			}
+			lbl.setIcon(icon);
+			frame2.add(lbl);
+		}
 	}
 
-	public void updateImage(Image img) {
+	public void updateImage(Image img, String frame) {
 
 		icon = new ImageIcon(img);
 		lbl.setIcon(icon);
-		frame.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
-		frame.add(lbl);
+		if (frame.equals("frame1")) {
+			frame1.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
+			frame1.add(lbl);
+		}
+		else if (frame.equals("frame2")) {
+			frame2.setSize(img.getWidth(null) + 50, img.getHeight(null) + 50);
+			frame2.add(lbl);
+		}
+		else
+			System.err.println("Fejl i display af image");
 		//System.out.println("frame width: " + frame.getWidth() + " frame height: " + frame.getHeight());
 	}
 
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		
+
 		//Ini frame
 		try {
-			this.displayImage(this.Mat2BufferedImage(queue.take()));
+			//this.displayImage(this.Mat2BufferedImage(queue.take()), "frame1");
+			this.displayImage(this.Mat2BufferedImage(queueEdge.take()), "frame2");
 		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block
 			System.err.println("Fejl ved at få objekt fra queue!");
 			e1.printStackTrace();
 		}
-		
+
 		while (running) {
 			try {
-				this.updateImage(this.Mat2BufferedImage(queue.take()));
+				//this.updateImage(this.Mat2BufferedImage(queue.take()), "frame1");
+				this.updateImage(this.Mat2BufferedImage(queueEdge.take()), "frame2");
 			} catch (InterruptedException e) {
 				System.err.println("Fejl ved at få fat i objekt i Blockingqueue!");
 				e.printStackTrace();

@@ -43,13 +43,14 @@ public class Main {
 		BlockingQueue queueBooleans = new ArrayBlockingQueue(1024);
 		BlockingQueue queueQR = new ArrayBlockingQueue(1024);
 		BlockingQueue queuePoint = new ArrayBlockingQueue(1024);
+		BlockingQueue queueEdge = new ArrayBlockingQueue(1024);
 		queueDrone = new ArrayBlockingQueue(1024);
 
-		Thread OCV = new Thread(new OCVController(queueFrame, queueBooleans, queueQR, queuePoint)); //OpenCV video capture controller
+		Thread OCV = new Thread(new OCVController(queueFrame, queueBooleans, queueQR, queuePoint, queueEdge)); //OpenCV video capture controller
 		OCV.start();
 
 
-		Thread VCS = new Thread(new VideoStreamController(queueFrame));
+		Thread VCS = new Thread(new VideoStreamController(queueFrame, queueEdge));
 		VCS.start();
 
 		DroneController drone = new DroneController(queueDrone, queueBooleans, queuePoint);
@@ -63,59 +64,17 @@ public class Main {
 		}
 
 		System.out.println("takeoff nu");
-		drone.takeoff();
-		waitDrone();
+		//drone.takeoff();
+		//waitDrone();
 		System.out.println("takeoff færdig ");
 
 
 		//Brug navdata i stedet
 
 		while(swt) {
-
-			if (!queuePoint.isEmpty()) {
-
-//				boolean b = (boolean) queueBooleans.take();
-//				Point center = (Point) queuePoint.take();
-//				if (b)
-//					queueBooleans.put(false);
-
-				System.out.println("Ring fundet !!! centrere");
-				isCentered = drone.center( lowerX,  upperX,  lowerY,  upperY);
-				waitDrone();
-				if(isCentered) {
-					System.out.println("Færdig med at centrere, tjekker QR");
-					drone.standStill();
-					wait(2000);
-					waitDrone();
-					drone.searchForQR();
-					waitDrone();
-				}
-				if (!queueQR.isEmpty()) {
-					String qr = (String) queueQR.take();
-					System.err.println("QR kode fundet, der står: " + qr);
-					if (qr.contains("0")) {
-						System.err.println("Rigtige QR! Justerer højde og flyver igennem ringen!");
-						drone.correctQR();
-						waitDrone();
-						drone.flyThroughRing();
-						waitDrone();
-					}
-					else {
-						System.err.println("Ikke korrekte QR...");
-					}
-					drone.land();
-					//wait(drone);
-					System.exit(0);
-				}
-
-			}
-			else {
-				//søgnings algoritme
-				drone.standStill();
-				waitDrone();
-				drone.search();
-				waitDrone();
-			}
+			
+			
+			
 		}
 	}
 	private static void wait(int millis) {

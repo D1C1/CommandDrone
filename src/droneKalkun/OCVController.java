@@ -1,15 +1,22 @@
 package droneKalkun;
 
+import java.awt.Panel;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
@@ -26,14 +33,16 @@ public class OCVController implements Runnable {
 	List<Point> circleslist;
 	String qr;
 	private boolean b;
+	private BlockingQueue queueEdge;
 
-	public OCVController(BlockingQueue queueFrame, BlockingQueue queueBooleans, BlockingQueue queueQR, BlockingQueue queuePoint) {
+	public OCVController(BlockingQueue queueFrame, BlockingQueue queueBooleans, BlockingQueue queueQR, BlockingQueue queuePoint, BlockingQueue queueEdge) {
 		cam = new VideoCapture("tcp://192.168.1.1:5555");
 		frame = new Mat();
 		this.queueFrame = queueFrame;
 		this.queueBooleans = queueBooleans;
 		this.queueQR = queueQR;
 		this.queuePoint = queuePoint;
+		this.queueEdge = queueEdge;
 		running = true;
 		searchForCenter = false;
 		beginSearch = false;
@@ -66,76 +75,89 @@ public class OCVController implements Runnable {
 		while (running) {
 			cam.read(frame); //640 x 360
 
-			Mat gray = new Mat();
-			Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
-			Imgproc.medianBlur(gray, gray, 5);
+			Mat bilateral_filtered_img = new Mat();
+			Mat edge = new Mat();
+			Imgproc.bilateralFilter(frame, bilateral_filtered_img, 5, 175, 175);
+			Imgproc.Canny(bilateral_filtered_img, edge, 75, 200);
 
-			Mat circles = new Mat();
-			Imgproc.HoughCircles(gray, circles, Imgproc.HOUGH_GRADIENT, 1.0, (double) gray.rows() / 1, // change this value to detect circles with different distances to each other
-					100.0, 60.0, 100, 500);
+			List<MatOfPoint> contours = new ArrayList<>();
+			List<Point> hierarchy = new ArrayList<>();
+			
+			Mat edgeContours = new Mat();
 
-			for (int x = 0; x < circles.cols(); x++) {
-				double[] c = circles.get(0, x);
-				center = new Point(Math.round(c[0]), Math.round(c[1]));
-				//System.out.println("center x: " + center.x + " center y: " + center.y);
-				circleslist.add(center);
-				// circle center
-				Imgproc.circle(frame, center, 1, new Scalar(0, 100, 100), 3, 8, 0);
-				// circle outline
-				int radius = (int) Math.round(c[2]);
-				Imgproc.circle(frame, center, radius, new Scalar(255, 0, 255), 3, 8, 0);
+			Imgproc.findContours(edge, contours, edgeContours, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+			List<MatOfPoint> rectContours = new ArrayList<>();
+
+			double largest_area = 0;
+			int largest_countour_index = 0;
+			
+			for (int i = 0; i < contours.size(); i++) {
+
+				double a = Imgproc.contourArea(contours.get(i), false);
+
+				if (a > largest_area) {
+					largest_area = a;
+					largest_countour_index = i;
+				}
+				for (int j = 0; j <= i; j++) {
+					if (edgeContours.get(j, 2, edgeContours.get(j, 2)) != -1) {
+						Imgproc.drawContours(edge, contours, j, new Scalar(0,255,0));
+					}
+					else {
+						Imgproc.drawContours(edge, contours, j, new Scalar(255,0,0));
+					}
+				}
+				Imgproc.drawContours(edge, contours, largest_countour_index, new Scalar(0,0,255), 1, 8, edgeContours, 0, new Point());
+
 			}
 
-			if(circleslist.size() > 9) {
-				double tempX = circleslist.get(0).x;
-				double tempY = circleslist.get(0).y;
-				for (int i = 1; i < circleslist.size(); i++) {
-					if (!(tempX >= circleslist.get(i).x - 20 || tempX <= circleslist.get(i).x + 20) && (tempY >= circleslist.get(i).y - 20 || tempY <= circleslist.get(i).y + 20)) {
-						searchForCenter = false;
-						break;
-					}
-					else
-						searchForCenter = true;
-				}
-				circleslist.clear();
-				if (queuePoint.isEmpty()) { //Nullpointer
-					try {
-						queuePoint.put(center);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				if (searchForCenter) { //Cirklen er god nok
-					if(!queueBooleans.isEmpty())
-						try {
-							b = (boolean) queueBooleans.take();
-						} catch (InterruptedException e2) {
-							// TODO Auto-generated catch block
-							e2.printStackTrace();
-						}
-					if(b) {
-						try {
-							qr = QRReader.ReadQR(this.Mat2Bimg(frame));
-							if (qr != null && queueQR.isEmpty()) {
-								queueQR.put(qr);
-								b = false;
-							}
-						} catch (IOException | InterruptedException e1) {
-							// TODO Auto-generated catch block
-							System.err.println("Fejl ved læsning af QR kode...");
-							e1.printStackTrace();
-						}
-						searchForCenter = false;
-					}
-				}
 
-			}
+			//			MatOfPoint2f magic = new MatOfPoint2f();
+			//			
+			//				for (int i = 0; i<contours.size(); i++) {
+			//					
+			//					contours.get(i).convertTo(magic, CvType.CV_32FC2);
+			//					
+			//					Imgproc.approxPolyDP(magic, magic, 0.01*Imgproc.arcLength(magic, true), true);
+			//					int approx = magic.channels();
+			//					magic.convertTo(contours.get(i), CvType.CV_32S);
+			//					
+			//					//double area = Imgproc.contourArea(contours.get(i));
+			//					//if (approx < 8) {
+			//						rectContours.add(contours.get(i));
+			//						System.out.println(rectContours.get(i).);
+			//					//}
+			//				}
+			//				
+			//				Imgproc.drawContours(edge, rectContours, -1, new Scalar(255,0,0));
+			//				//Imgproc.cvtColor(edge, edge, Imgproc.COLOR_BGR2GRAY);
+
 			try {
 				queueFrame.put(frame);
+				queueEdge.put(edge);
 			} catch (InterruptedException e) {
 				System.err.println("Fejl ved at putte frame i queue!");
 				e.printStackTrace();
 			}
 		}
 	}
+
+	//	Mat dest = new Mat();
+	//	
+	//	Core.inRange(frame, new Scalar(58,125,0), new Scalar(256,256,256), dest);
+	//	
+	//	Mat erode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3,3));
+	//	Mat dilate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5,5));
+	//	
+	//	Imgproc.erode(dest, dest, erode);
+	//	Imgproc.erode(dest, dest, erode);
+	//	
+	//	Imgproc.dilate(dest, dest, dilate);
+	//	Imgproc.dilate(dest, dest, dilate);
+	//	
+	//	List<MatOfPoint> contours = new ArrayList<>();
+	//	
+	//	Imgproc.findContours(dest, contours, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+	//	Imgproc.drawContours(dest, contours, -1, new Scalar(255,0,0));
 }
