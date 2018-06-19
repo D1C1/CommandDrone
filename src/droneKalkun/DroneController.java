@@ -65,7 +65,11 @@ public class DroneController {
 		isReady();
 	}
 
-	public void takeoff() {
+	public void takeOff() {
+		drone.getCommandManager().takeOff();
+	}
+	
+	public void takeoffOld() {
 		long idle = System.currentTimeMillis();
 		System.err.println("takeoff");
 	//	while (System.currentTimeMillis() - idle < 2500) {

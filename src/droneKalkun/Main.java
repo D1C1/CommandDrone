@@ -63,7 +63,7 @@ public class Main {
 		}
 
 		System.out.println("takeoff nu");
-		drone.takeoff();
+		drone.takeOff();
 		waitDrone();
 		System.out.println("takeoff færdig ");
 
